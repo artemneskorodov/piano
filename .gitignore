@@ -1,0 +1,5 @@
+esp/build/
+esp/managed_components/
+esp/dependencies.lock
+esp/sdkconfig*
+.vscode/
