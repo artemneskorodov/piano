@@ -42,9 +42,9 @@ def main():
         print("Cancel.")
         return
 
-    with serial.Serial(ports_info['ports'].device, 115200, timeout=1) as ser:
+    with serial.Serial(ports_info['ports'][selected].device, 115200, timeout=1) as ser:
         time.sleep(1.5)
-        ser.write('abcdef')
+        ser.write(b'rgbgbr')
         ser.flush()
 
 if __name__ == "__main__":
