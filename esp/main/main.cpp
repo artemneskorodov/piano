@@ -9,32 +9,79 @@
 #include "led_strip.h"
 #include "led_strip_types.h"
 #include "led_strip_rmt.h"
+#include <portmacro.h>
 
-#define RX_BUF_SIZE 1024
+static const size_t kRxBufferSize = 1024;
 
-void uart_init(void)
+void uart_init(void);
+void receive_task(void *arg);
+
+extern "C" void
+app_main(void)
 {
-    const uart_config_t uart_config = {
-        .baud_rate = 115200,
-        .data_bits = UART_DATA_8_BITS,
-        .parity = UART_PARITY_DISABLE,
-        .stop_bits = UART_STOP_BITS_1,
-        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+    // Strip common config info
+    led_strip_config_t strip_config =
+    {
+        .strip_gpio_num         = 48,
+        .max_leds               = 1,
+        .led_model              = LED_MODEL_WS2812,
+        .color_component_format = LED_STRIP_COLOR_COMPONENT_FMT_GRB,
+        .flags                  =
+        {
+            .invert_out = false,
+        }
+    };
+
+    // RMT backend specific config info
+    led_strip_rmt_config_t rmt_config =
+    {
+        .clk_src           = RMT_CLK_SRC_DEFAULT,
+        .resolution_hz     = 10 * 1000 * 1000,
+        .mem_block_symbols = 64,
+        .flags             =
+        {
+            .with_dma = false,
+        }
+    };
+
+    // Creating led strip handler
+    led_strip_handle_t led_strip = NULL;
+    ESP_ERROR_CHECK(led_strip_new_rmt_device(&strip_config, &rmt_config, &led_strip));
+    led_strip_clear(led_strip);
+
+    // Initializing UART
+    uart_init();
+
+    // Creating task to receive data from UART
+    xTaskCreate(receive_task, "uart_rx_task", 2048, &led_strip, 5, NULL);
+}
+
+void
+uart_init(void)
+{
+    const uart_config_t uart_config =
+    {
+        .baud_rate  = 115200,
+        .data_bits  = UART_DATA_8_BITS,
+        .parity     = UART_PARITY_DISABLE,
+        .stop_bits  = UART_STOP_BITS_1,
+        .flow_ctrl  = UART_HW_FLOWCTRL_DISABLE,
         .source_clk = UART_SCLK_DEFAULT,
     };
 
     uart_param_config(UART_NUM_0, &uart_config);
     uart_set_pin(UART_NUM_0, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-    uart_driver_install(UART_NUM_0, RX_BUF_SIZE * 2, 0, 0, NULL, 0);
+    uart_driver_install(UART_NUM_0, kRxBufferSize * 2, 0, 0, NULL, 0);
 }
 
-void receive_task(void *arg)
+void
+receive_task(void *arg)
 {
     led_strip_handle_t led_strip = *(led_strip_handle_t *)arg;
 
     struct res_t
     {
-        char symbol;
+        char     symbol;
         uint32_t red;
         uint32_t green;
         uint32_t blue;
@@ -42,13 +89,15 @@ void receive_task(void *arg)
 
     res_t res[] =
     {
-        {'r', 255, 0, 0},
-        {'g', 0, 255, 0},
-        {'b', 0, 0, 255},
+        {'r', 255,   0,   0},
+        {'g',   0, 255,   0},
+        {'b',   0,   0, 255},
     };
 
-    uint8_t* data = (uint8_t*) malloc(RX_BUF_SIZE);
-    while (1) {
+    uint8_t data[kRxBufferSize] = {};
+    while (true)
+    {
+        // Blinking LED (remove it)
         led_strip_set_pixel(led_strip, 0, 5, 5, 5);
         led_strip_refresh(led_strip);
         vTaskDelay(50 / portTICK_PERIOD_MS);
@@ -56,7 +105,9 @@ void receive_task(void *arg)
         led_strip_refresh(led_strip);
         vTaskDelay(50 / portTICK_PERIOD_MS);
 
-        int len = uart_read_bytes(UART_NUM_0, data, RX_BUF_SIZE, 20 / portTICK_PERIOD_MS);
+        // Reading bytes from UART
+        int len = uart_read_bytes(UART_NUM_0, data, kRxBufferSize, 20 / portTICK_PERIOD_MS);
+        // Drawing colors if got ascii 'r', 'g' or 'b'
         if (len > 0) {
             for (int i = 0; i < len; ++i)
             {
@@ -72,39 +123,4 @@ void receive_task(void *arg)
             }
         }
     }
-    free(data);
-}
-
-extern "C" void app_main(void)
-{
-    /// LED strip common configuration
-    led_strip_config_t strip_config = {
-        .strip_gpio_num = 48,  // The GPIO that connected to the LED strip's data line
-        .max_leds = 1,                 // The number of LEDs in the strip,
-        .led_model = LED_MODEL_WS2812, // LED strip model, it determines the bit timing
-        .color_component_format = LED_STRIP_COLOR_COMPONENT_FMT_GRB, // The color component format is G-R-B
-        .flags = {
-            .invert_out = false, // don't invert the output signal
-        }
-    };
-
-    /// RMT backend specific configuration
-    led_strip_rmt_config_t rmt_config = {
-        .clk_src = RMT_CLK_SRC_DEFAULT,    // different clock source can lead to different power consumption
-        .resolution_hz = 10 * 1000 * 1000, // RMT counter clock frequency: 10MHz
-        .mem_block_symbols = 64,           // the memory size of each RMT channel, in words (4 bytes)
-        .flags = {
-            .with_dma = false, // DMA feature is available on chips like ESP32-S3/P4
-        }
-    };
-
-    led_strip_handle_t led_strip = NULL;
-    ESP_ERROR_CHECK(led_strip_new_rmt_device(&strip_config, &rmt_config, &led_strip));
-
-    // Очищаем
-    led_strip_clear(led_strip);
-
-    uart_init();
-    printf("Waiting for data on UART0 (USB-CDC)...\n");
-    xTaskCreate(receive_task, "uart_rx_task", 2048, &led_strip, 5, NULL);
 }
