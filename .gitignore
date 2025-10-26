@@ -4,3 +4,4 @@ esp/dependencies.lock
 esp/sdkconfig*
 .vscode/
 midi/build
+*.mid
