@@ -3,5 +3,5 @@ esp/managed_components/
 esp/dependencies.lock
 esp/sdkconfig*
 .vscode/
-midi/build
+MidiParser/build
 *.mid
