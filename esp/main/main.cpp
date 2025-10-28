@@ -1,6 +1,12 @@
+//================================================================================================//
+
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <portmacro.h>
+
+//------------------------------------------------------------------------------------------------//
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/uart.h"
@@ -9,12 +15,15 @@
 #include "led_strip.h"
 #include "led_strip_types.h"
 #include "led_strip_rmt.h"
-#include <portmacro.h>
+
+//================================================================================================//
 
 static const size_t kRxBufferSize = 1024;
 
 void uart_init(void);
 void receive_task(void *arg);
+
+//================================================================================================//
 
 extern "C" void
 app_main(void)
@@ -56,6 +65,8 @@ app_main(void)
     xTaskCreate(receive_task, "uart_rx_task", 2048, &led_strip, 5, NULL);
 }
 
+//================================================================================================//
+
 void
 uart_init(void)
 {
@@ -70,9 +81,15 @@ uart_init(void)
     };
 
     uart_param_config(UART_NUM_0, &uart_config);
-    uart_set_pin(UART_NUM_0, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+    uart_set_pin(UART_NUM_0,
+                 UART_PIN_NO_CHANGE,
+                 UART_PIN_NO_CHANGE,
+                 UART_PIN_NO_CHANGE,
+                 UART_PIN_NO_CHANGE);
     uart_driver_install(UART_NUM_0, kRxBufferSize * 2, 0, 0, NULL, 0);
 }
+
+//------------------------------------------------------------------------------------------------//
 
 void
 receive_task(void *arg)
@@ -97,7 +114,7 @@ receive_task(void *arg)
     uint8_t data[kRxBufferSize] = {};
     while (true)
     {
-        // Blinking LED (remove it)
+        // FIXME Blinking LED
         led_strip_set_pixel(led_strip, 0, 5, 5, 5);
         led_strip_refresh(led_strip);
         vTaskDelay(50 / portTICK_PERIOD_MS);
@@ -107,8 +124,11 @@ receive_task(void *arg)
 
         // Reading bytes from UART
         int len = uart_read_bytes(UART_NUM_0, data, kRxBufferSize, 20 / portTICK_PERIOD_MS);
+        //
+        // Handling received data
         // Drawing colors if got ascii 'r', 'g' or 'b'
-        if (len > 0) {
+        if (len > 0)
+        {
             for (int i = 0; i < len; ++i)
             {
                 for (int j = 0; j < sizeof(res) / sizeof(res[0]); ++j)
@@ -124,3 +144,5 @@ receive_task(void *arg)
         }
     }
 }
+
+//================================================================================================//

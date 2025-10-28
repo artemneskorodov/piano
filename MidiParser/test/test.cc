@@ -56,7 +56,7 @@ main(int argc, const char *argv[])
 
     for (auto event : events)
     {
-        double sleep_step = 10000;
+        double sleep_step = 100000;
         double sleep_time = static_cast<double>(tempo) * event.time.delta_time;
 
         for (double slept = 0; slept < sleep_time; slept += sleep_step)

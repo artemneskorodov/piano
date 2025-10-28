@@ -12,7 +12,6 @@ def get_ports_list() -> Dict[List[ListPortInfo], List[str]]:
     for port in ports:
 
         representing_string : str = f"PID: {port.pid}, NAME: {port.name}"
-
         if port.manufacturer is not None and port.manufacturer != "n/a":
             representing_string += f", MANUFACTURER: {port.manufacturer}"
 

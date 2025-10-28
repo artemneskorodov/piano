@@ -21,6 +21,7 @@ idf.py add-dependency "espressif/led_strip^3.0.1~1"
 idf.py set-target esp32s3
 ```
 
+Get port of connected ESP32: ls /dev/cu.* on MacOS
 ```bash
 idf.py -p <your com port> build flash monitor
 ```
