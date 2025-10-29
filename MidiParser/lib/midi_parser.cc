@@ -37,6 +37,8 @@ enum midi_event_t
     MIDI_EVENT_PITCH_BEND        = 0xe0,
 };
 
+//------------------------------------------------------------------------------------------------//
+
 //
 // Used Meta Events from MIDI format
 //
@@ -45,10 +47,14 @@ enum meta_event_t
     META_EVENT_TEMPO = 0x51,
 };
 
+//------------------------------------------------------------------------------------------------//
+
 //
 // Prefix of Meta Event
 //
 static const uint8_t kMetaEventPrefix = 0xff;
+
+//------------------------------------------------------------------------------------------------//
 
 //
 // Used System Exclusive events from MIDI format
@@ -138,6 +144,8 @@ struct midi_header_t
     //
     uint16_t tickdiv = 0;
 };
+
+//------------------------------------------------------------------------------------------------//
 
 //
 // Header of track in MIDI file
@@ -362,15 +370,18 @@ parse_midi(const uint8_t        *midi_data,
                     // goto start of cycle and this switch again, skipping all tracks
                     continue;
                 }
+                break;
             }
             case 2:
             {
                 // Tracks are playing separately
                 piano_chanel     = 0xff;
                 has_piano_chanel = false;
+                break;
             }
             default:
             {
+                std::cerr << "Unexpected format = " << midi_header.format << "\n";
                 return STATUS_MIDI_HEADER_FORMAT_ERROR;
             }
         }
@@ -460,13 +471,13 @@ parse_midi(const uint8_t        *midi_data,
             {
                 switch (midi_event)
                 {
-                    case MIDI_EVENT_NOTE_OFF:          {position += 2; break; }
-                    case MIDI_EVENT_NOTE_ON:           {position += 2; break; }
-                    case MIDI_EVENT_NOTE_AFTERTOUCH:   {position += 2; break; }
-                    case MIDI_EVENT_CONTROLLER:        {position += 2; break; }
-                    case MIDI_EVENT_PROGRAM_CHANGE:    {position += 1; break; }
-                    case MIDI_EVENT_CHANEL_AFTERTOUCH: {position += 1; break; }
-                    case MIDI_EVENT_PITCH_BEND:        {position += 2; break; }
+                    case MIDI_EVENT_NOTE_OFF:          { position += 2; break; }
+                    case MIDI_EVENT_NOTE_ON:           { position += 2; break; }
+                    case MIDI_EVENT_NOTE_AFTERTOUCH:   { position += 2; break; }
+                    case MIDI_EVENT_CONTROLLER:        { position += 2; break; }
+                    case MIDI_EVENT_PROGRAM_CHANGE:    { position += 1; break; }
+                    case MIDI_EVENT_CHANEL_AFTERTOUCH: { position += 1; break; }
+                    case MIDI_EVENT_PITCH_BEND:        { position += 2; break; }
                     default:
                     {
                         std::cerr << "Unexpected Midi event: 0x" << std::hex

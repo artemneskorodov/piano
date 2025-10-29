@@ -6,7 +6,10 @@ See https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/get-started/li
 
 ### Connecting ESP
 Connect ESP32 AI-S3 to your computer.
-Depending on your system, determine the port corresponding to device.
+Depending on your system, determine the port corresponding to device:
+```bash
+ls /dev/cu.* (MacOs)
+```
 
 ### Building project and flashing ESP
 ```bash

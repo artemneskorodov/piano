@@ -9,15 +9,27 @@
 
 size_t get_file_size(std::ifstream &file);
 
-void draw_keys(char *keys)
+char gKeys[128] = {};
+bool gNeedDrawing = false;
+
+void
+worker()
 {
-    static int counter = 0;
-    std::cout << counter++ << ": ";
-    for (int i = 0; i != 128; ++i)
+    while (gNeedDrawing)
     {
-        putchar(keys[i]);
+        for (int i = 0; i != 128; ++i)
+        {
+            if (gKeys[i] == 1)
+            {
+                printf("█");
+            } else
+            {
+                printf("░");
+            }
+        }
+        putchar('\n');
+        std::this_thread::sleep_for(std::chrono::duration<double, std::micro>(100000));
     }
-    putchar('\n');
 }
 
 int
@@ -46,36 +58,43 @@ main(int argc, const char *argv[])
 
     piano::status_t result = piano_midi::parse_midi(midi_data.get(), midi_size, events);
 
-    char keys[128] = {};
-    for (int i = 0; i < 128; ++i)
-    {
-        keys[i] = '-';
-    }
+    std::cout << result << std::endl;
 
-    uint32_t tempo = 500000;
+    std::cout << "3\n";
+    std::this_thread::sleep_for(std::chrono::duration<double, std::micro>(1000000));
+
+    std::cout << "2\n";
+    std::this_thread::sleep_for(std::chrono::duration<double, std::micro>(1000000));
+
+    std::cout << "1\n";
+    std::this_thread::sleep_for(std::chrono::duration<double, std::micro>(1000000));
+
+    gNeedDrawing = true;
+    std::thread t(worker);
+
+    std::cout << "0\n";
+
+    double tempo = 500000.;
 
     for (auto event : events)
     {
-        double sleep_step = 100000;
-        double sleep_time = static_cast<double>(tempo) * event.time.delta_time;
+        double sleep_time = tempo * event.time.delta_time;
 
-        for (double slept = 0; slept < sleep_time; slept += sleep_step)
-        {
-            std::this_thread::sleep_for(std::chrono::duration<double, std::micro>(sleep_step));
-            draw_keys(keys);
-        }
+        std::this_thread::sleep_for(std::chrono::duration<double, std::micro>(sleep_time));
+
         if (event.event == piano::EVENT_NOTE_ON)
         {
-            keys[event.data.note] = 'x';
+            gKeys[event.data.note] = 1;
         } else if (event.event == piano::EVENT_NOTE_OFF)
         {
-            keys[event.data.note] = '-';
+            gKeys[event.data.note] = 0;
         } else if (event.event == piano::EVENT_TEMPO_SET)
         {
-            tempo = event.data.tempo;
+            tempo = static_cast<double>(event.data.tempo);
         }
     }
-
+    gNeedDrawing = false;
+    t.join();
 }
 
 size_t
