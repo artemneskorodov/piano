@@ -4,4 +4,3 @@ ESP/dependencies.lock
 ESP/sdkconfig*
 .vscode/
 MidiParser/build
-*.mid

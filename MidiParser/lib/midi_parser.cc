@@ -311,23 +311,23 @@ translate_time(std::vector<event_t> &events,
     for (size_t i = 0; i != events.size(); ++i)
     {
         uint64_t delta_ticks = 0;
-        delta_ticks = events[i].time.current_ticks - last_ticks;
-        last_ticks  = events[i].time.current_ticks;
+        delta_ticks = events[i].time_.current_ticks - last_ticks;
+        last_ticks  = events[i].time_.current_ticks;
 
         if ((midi_header->chunk_length & 0x0080) == 0)
         {
             // Time in metrical
             // Multiplied by 10^6
             // Need to be multiplied by current tempo and divided by 10^3
-            events[i].time.delta_time = static_cast<double>(delta_ticks) /
-                                        static_cast<double>(midi_header->tickdiv);
+            events[i].time_.delta_time = static_cast<double>(delta_ticks) /
+                                         static_cast<double>(midi_header->tickdiv);
         } else
         {
             uint8_t fps       = midi_header->tickdiv & 0x7f;
             uint8_t subframes = (midi_header->tickdiv >> 8) & 0xff;
             // Actual delta_time, which program has to sleep before event
-            events[i].time.delta_time = 1000.0 * static_cast<double>(delta_ticks) /
-                                        static_cast<double>(fps * subframes);
+            events[i].time_.delta_time = 1000.0 * static_cast<double>(delta_ticks) /
+                                         static_cast<double>(fps * subframes);
         }
     }
     return STATUS_SUCCESS;
@@ -420,13 +420,9 @@ parse_midi(const uint8_t        *midi_data,
                 if (meta_event == META_EVENT_TEMPO)
                 {
                     uint32_t tempo = read_be<3>(position);
-                    event_t  event =
-                    {
-                        .event              = EVENT_TEMPO_SET,
-                        .data.tempo         = tempo,
-                        .time.current_ticks = current_time
-                    };
-                    events.push_back(event);
+                    events.emplace_back(event_t(EVENT_TEMPO_SET,
+                                                tempo,
+                                                current_time));
                 } else
                 {
                     position += meta_event_length;
@@ -497,15 +493,10 @@ parse_midi(const uint8_t        *midi_data,
                 midi_event = MIDI_EVENT_NOTE_OFF;
             }
 
-            event_t event =
-            {
-                .event              = (midi_event == MIDI_EVENT_NOTE_ON) ? EVENT_NOTE_ON
-                                                                         : EVENT_NOTE_OFF,
-                .data.note          = note,
-                .time.current_ticks = current_time
-            };
-
-            events.emplace_back(event);
+            events.push_back(event_t((midi_event == MIDI_EVENT_NOTE_ON) ? EVENT_NOTE_ON
+                                                                        : EVENT_NOTE_OFF,
+                                     note,
+                                     current_time));
         }
     }
 
@@ -513,7 +504,7 @@ parse_midi(const uint8_t        *midi_data,
     std::sort(events.begin(),
               events.end(),
               [](const auto &a, const auto &b)
-                { return a.time.current_ticks < b.time.current_ticks; });
+                { return a.time_.current_ticks < b.time_.current_ticks; });
 
     // Translating time in millisecond to have faster computations later
     status = translate_time(events, &midi_header);

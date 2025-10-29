@@ -78,19 +78,19 @@ main(int argc, const char *argv[])
 
     for (auto event : events)
     {
-        double sleep_time = tempo * event.time.delta_time;
+        double sleep_time = tempo * event.time_.delta_time;
 
         std::this_thread::sleep_for(std::chrono::duration<double, std::micro>(sleep_time));
 
-        if (event.event == piano::EVENT_NOTE_ON)
+        if (event.event_ == piano::EVENT_NOTE_ON)
         {
-            gKeys[event.data.note] = 1;
-        } else if (event.event == piano::EVENT_NOTE_OFF)
+            gKeys[event.data_.note] = 1;
+        } else if (event.event_ == piano::EVENT_NOTE_OFF)
         {
-            gKeys[event.data.note] = 0;
-        } else if (event.event == piano::EVENT_TEMPO_SET)
+            gKeys[event.data_.note] = 0;
+        } else if (event.event_ == piano::EVENT_TEMPO_SET)
         {
-            tempo = static_cast<double>(event.data.tempo);
+            tempo = static_cast<double>(event.data_.tempo);
         }
     }
     gNeedDrawing = false;

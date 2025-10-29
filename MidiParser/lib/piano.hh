@@ -32,17 +32,31 @@ enum event_num_t
 
 struct event_t
 {
-    event_num_t  event;
+    event_t (event_num_t event, uint8_t note, uint64_t current_ticks)
+    {
+        event_ = event;
+        data_.note = note;
+        time_.current_ticks = current_ticks;
+    }
+
+    event_t (event_num_t event, uint32_t tempo, uint64_t current_ticks)
+    {
+        event_ = EVENT_TEMPO_SET;
+        data_.tempo = tempo;
+        time_.current_ticks = current_ticks;
+    }
+
+    event_num_t  event_;
     union
     {
         uint8_t  note;
         uint32_t tempo;
-    } data;
+    } data_;
     union
     {
         uint64_t current_ticks;
         double   delta_time;
-    } time;
+    } time_;
 };
 
 //================================================================================================//
